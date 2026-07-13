@@ -1,6 +1,7 @@
+@'
 "use client";
 
-import { useEffect, useState } from "react";
+import { Suspense, useEffect, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import Navbar from "@/components/Navbar";
 
@@ -9,10 +10,28 @@ interface Me {
   subscriptionStatus: string | null;
 }
 
-export default function BillingPage() {
+function CheckoutBanner() {
   const searchParams = useSearchParams();
   const checkoutState = searchParams.get("checkout");
 
+  if (checkoutState === "success") {
+    return (
+      <div className="mb-6 text-emerald-400 text-sm bg-emerald-400/10 border border-emerald-400/20 rounded-lg px-4 py-3">
+        Payment received — your account has been upgraded to Pro.
+      </div>
+    );
+  }
+  if (checkoutState === "cancelled") {
+    return (
+      <div className="mb-6 text-white/60 text-sm bg-white/5 border border-white/10 rounded-lg px-4 py-3">
+        Checkout was cancelled. No changes were made.
+      </div>
+    );
+  }
+  return null;
+}
+
+export default function BillingPage() {
   const [me, setMe] = useState<Me | null>(null);
   const [loading, setLoading] = useState(false);
 
@@ -48,16 +67,9 @@ export default function BillingPage() {
         <h1 className="text-2xl font-bold mb-1">Billing</h1>
         <p className="text-white/50 text-sm mb-8">Manage your plan and payment method.</p>
 
-        {checkoutState === "success" && (
-          <div className="mb-6 text-emerald-400 text-sm bg-emerald-400/10 border border-emerald-400/20 rounded-lg px-4 py-3">
-            Payment received — your account has been upgraded to Pro.
-          </div>
-        )}
-        {checkoutState === "cancelled" && (
-          <div className="mb-6 text-white/60 text-sm bg-white/5 border border-white/10 rounded-lg px-4 py-3">
-            Checkout was cancelled. No changes were made.
-          </div>
-        )}
+        <Suspense fallback={null}>
+          <CheckoutBanner />
+        </Suspense>
 
         <div className="card p-6">
           <div className="flex items-center justify-between">
@@ -88,3 +100,4 @@ export default function BillingPage() {
     </main>
   );
 }
+'@ | Out-File -FilePath app\dashboard\billing\page.tsx -Encoding utf8
