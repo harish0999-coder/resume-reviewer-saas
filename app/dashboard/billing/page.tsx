@@ -15,18 +15,20 @@ function CheckoutBanner() {
 
   if (checkoutState === "success") {
     return (
-      <div className="mb-6 text-emerald-400 text-sm bg-emerald-400/10 border border-emerald-400/20 rounded-lg px-4 py-3">
+      <div className="mb-6 rounded-lg border border-emerald-400/20 bg-emerald-400/10 px-4 py-3 text-sm text-emerald-400">
         Payment received — your account has been upgraded to Pro.
       </div>
     );
   }
+
   if (checkoutState === "cancelled") {
     return (
-      <div className="mb-6 text-white/60 text-sm bg-white/5 border border-white/10 rounded-lg px-4 py-3">
+      <div className="mb-6 rounded-lg border border-white/10 bg-white/5 px-4 py-3 text-sm text-white/60">
         Checkout was cancelled. No changes were made.
       </div>
     );
   }
+
   return null;
 }
 
@@ -35,26 +37,64 @@ export default function BillingPage() {
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
-    fetch("/api/me")
-      .then((r) => r.json())
-      .then((d) => setMe(d.user))
-      .catch(() => {});
+    async function loadUser() {
+      try {
+        const res = await fetch("/api/me");
+
+        if (!res.ok) {
+          throw new Error("Failed to fetch user");
+        }
+
+        const data = await res.json();
+        setMe(data.user);
+      } catch (error) {
+        console.error(error);
+      }
+    }
+
+    loadUser();
   }, []);
 
   async function handleUpgrade() {
-    setLoading(true);
-    const res = await fetch("/api/stripe/checkout", { method: "POST" });
-    const data = await res.json();
-    setLoading(false);
-    if (data.url) window.location.href = data.url;
+    try {
+      setLoading(true);
+
+      const res = await fetch("/api/stripe/checkout", {
+        method: "POST",
+      });
+
+      const data = await res.json();
+
+      if (data.url) {
+        window.location.href = data.url;
+      }
+    } catch (error) {
+      console.error(error);
+      alert("Unable to start checkout.");
+    } finally {
+      setLoading(false);
+    }
   }
 
   async function handleManage() {
-    setLoading(true);
-    const res = await fetch("/api/stripe/portal", { method: "POST" });
-    const data = await res.json();
-    setLoading(false);
-    if (data.url) window.location.href = data.url;
+    try {
+      setLoading(true);
+
+      const res = await fetch("/api/stripe/portal", {
+        method: "POST",
+      });
+
+      const data = await res.json();
+
+      if (data.url) {
+        window.location.href = data.url;
+      }
+    } catch (error) {
+      console.error(error);
+      alert("Unable to open billing portal.");
+    } finally {
+      setLoading(false);
+    }
   }
 
   const isPro = me?.plan === "PRO";
@@ -62,9 +102,13 @@ export default function BillingPage() {
   return (
     <main>
       <Navbar />
-      <div className="max-w-2xl mx-auto px-6 py-12">
-        <h1 className="text-2xl font-bold mb-1">Billing</h1>
-        <p className="text-white/50 text-sm mb-8">Manage your plan and payment method.</p>
+
+      <div className="mx-auto max-w-2xl px-6 py-12">
+        <h1 className="mb-1 text-2xl font-bold">Billing</h1>
+
+        <p className="mb-8 text-sm text-white/50">
+          Manage your plan and payment method.
+        </p>
 
         <Suspense fallback={null}>
           <CheckoutBanner />
@@ -73,27 +117,46 @@ export default function BillingPage() {
         <div className="card p-6">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-white/50 text-xs uppercase tracking-wide">Current plan</p>
-              <p className="text-2xl font-bold mt-1">{me?.plan ?? "..."}</p>
+              <p className="text-xs uppercase tracking-wide text-white/50">
+                Current plan
+              </p>
+
+              <p className="mt-1 text-2xl font-bold">
+                {me?.plan ?? "..."}
+              </p>
+
               {me?.subscriptionStatus && (
-                <p className="text-white/40 text-xs mt-1">Status: {me.subscriptionStatus}</p>
+                <p className="mt-1 text-xs text-white/40">
+                  Status: {me.subscriptionStatus}
+                </p>
               )}
             </div>
+
             {isPro ? (
-              <button onClick={handleManage} disabled={loading} className="btn-secondary">
-                {loading ? "Loading..." : "Manage / cancel"}
+              <button
+                onClick={handleManage}
+                disabled={loading}
+                className="btn-secondary"
+              >
+                {loading ? "Loading..." : "Manage / Cancel"}
               </button>
             ) : (
-              <button onClick={handleUpgrade} disabled={loading} className="btn-primary">
+              <button
+                onClick={handleUpgrade}
+                disabled={loading}
+                className="btn-primary"
+              >
                 {loading ? "Loading..." : "Upgrade to Pro — $9/mo"}
               </button>
             )}
           </div>
         </div>
 
-        <p className="text-white/30 text-xs mt-6">
-          Payments are processed by Stripe in test mode. Use card number 4242 4242 4242 4242, any future
-          expiry, any CVC, to simulate a successful payment.
+        <p className="mt-6 text-xs text-white/30">
+          Payments are processed by Stripe in test mode. Use card number
+          <strong> 4242 4242 4242 4242 </strong>
+          with any future expiry date and any CVC to simulate a successful
+          payment.
         </p>
       </div>
     </main>
