@@ -1,4 +1,3 @@
-@'
 "use client";
 
 import { Suspense, useEffect, useState } from "react";
@@ -100,4 +99,3 @@ export default function BillingPage() {
     </main>
   );
 }
-'@ | Out-File -FilePath app\dashboard\billing\page.tsx -Encoding utf8
