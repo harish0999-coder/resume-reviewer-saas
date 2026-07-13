@@ -1,0 +1,45 @@
+// Prisma schema for AI Resume Reviewer
+// Datasource: MongoDB (Atlas free tier works great for this).
+// Set DATABASE_URL to a mongodb+srv:// connection string (see .env.example).
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mongodb"
+  url      = env("DATABASE_URL")
+}
+
+enum Plan {
+  FREE
+  PRO
+}
+
+model User {
+  id                   String    @id @default(auto()) @map("_id") @db.ObjectId
+  name                 String?
+  email                String    @unique
+  passwordHash         String
+  plan                 Plan      @default(FREE)
+  stripeCustomerId     String?   
+  stripeSubscriptionId String?   
+  subscriptionStatus   String?   // active, canceled, past_due, etc.
+  createdAt            DateTime  @default(now())
+  reviews              Review[]
+}
+
+model Review {
+  id              String   @id @default(auto()) @map("_id") @db.ObjectId
+  userId          String   @db.ObjectId
+  user            User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  jobTitle        String?
+  jobDescription  String
+  resumeText      String
+  score           Int
+  summary         String
+  strengths       String[]
+  gaps            String[]
+  suggestions     String[]
+  createdAt       DateTime @default(now())
+}
